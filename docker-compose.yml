@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-periodico}
+      POSTGRES_USER: ${POSTGRES_USER:-periodico}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    image: node:20-alpine
+    working_dir: /workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-periodico}:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/${POSTGRES_DB:-periodico}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-in-prod}
+      ACCESS_TOKEN_TTL: ${ACCESS_TOKEN_TTL:-1h}
+      REFRESH_TOKEN_TTL_DAYS: ${REFRESH_TOKEN_TTL_DAYS:-7}
+      FRONTEND_ORIGIN: ${FRONTEND_ORIGIN:-http://localhost:3000}
+      NODE_ENV: ${NODE_ENV:-development}
+      SEED_PASSWORD: ${SEED_PASSWORD:-devpassword}
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    volumes:
+      - .:/workspace
+      - root_node_modules:/workspace/node_modules
+      - backend_node_modules:/workspace/newspapper/node_modules
+      - ./newspapper/uploads:/workspace/newspapper/uploads
+    command: >-
+      sh -c "corepack enable &&
+      corepack prepare pnpm@10.18.3 --activate &&
+      pnpm install --frozen-lockfile &&
+      pnpm --filter newspapper db:migrate &&
+      pnpm --filter newspapper db:seed &&
+      pnpm --filter newspapper start:dev"
+
+volumes:
+  postgres_data:
+  root_node_modules:
+  backend_node_modules:

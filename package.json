@@ -1,0 +1,12 @@
+{
+  "name": "periodico",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "lint": "pnpm -r --if-present run lint",
+    "test": "node scripts/verify-agents.mjs && pnpm -r --if-present run test",
+    "build": "pnpm -r --if-present run build",
+    "format": "pnpm -r --if-present run format",
+    "typecheck": "pnpm -r --if-present run typecheck"
+  }
+}
