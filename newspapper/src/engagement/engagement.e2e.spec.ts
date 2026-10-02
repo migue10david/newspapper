@@ -27,6 +27,7 @@ describe('Saved news engagement (e2e)', () => {
   let userId: string;
   let secondUserId: string;
   let publishedNewsId: string;
+  let secondPublishedNewsId: string;
   let draftNewsId: string;
   let categoryId: string;
   let authorId: string;
@@ -97,6 +98,21 @@ describe('Saved news engagement (e2e)', () => {
       .returning();
     publishedNewsId = published.id;
 
+    const [secondPublished] = await db
+      .insert(news)
+      .values({
+        title: `Engagement second published ${stamp}`,
+        slug: `engagement-second-published-${stamp}`,
+        summary: 'Second published engagement news',
+        body: [{ type: 'paragraph', text: 'Second engagement body' }],
+        categoryId,
+        authorId,
+        status: 'published',
+        publishedAt: new Date(),
+      })
+      .returning();
+    secondPublishedNewsId = secondPublished.id;
+
     const [draft] = await db
       .insert(news)
       .values({
@@ -117,7 +133,11 @@ describe('Saved news engagement (e2e)', () => {
     await db
       .delete(readingHistory)
       .where(eq(readingHistory.newsId, publishedNewsId));
+    await db
+      .delete(readingHistory)
+      .where(eq(readingHistory.newsId, secondPublishedNewsId));
     await db.delete(news).where(eq(news.id, publishedNewsId));
+    await db.delete(news).where(eq(news.id, secondPublishedNewsId));
     await db.delete(news).where(eq(news.id, draftNewsId));
     await db.delete(users).where(eq(users.id, userId));
     await db.delete(users).where(eq(users.id, secondUserId));
@@ -186,6 +206,45 @@ describe('Saved news engagement (e2e)', () => {
       .set('Authorization', firstToken)
       .expect(200);
     expect((firstUserList.body as SavedNewsListResponse).total).toBe(0);
+  });
+
+  it('paginates saved news without duplicating repeated saves', async () => {
+    const token = tokenFor(userId, `engagement-${stamp}@test.dev`);
+    await request(app.getHttpServer())
+      .put(`/news/${publishedNewsId}/save`)
+      .set('Authorization', token)
+      .expect(200);
+    await request(app.getHttpServer())
+      .put(`/news/${secondPublishedNewsId}/save`)
+      .set('Authorization', token)
+      .expect(200);
+    await request(app.getHttpServer())
+      .put(`/news/${secondPublishedNewsId}/save`)
+      .set('Authorization', token)
+      .expect(200);
+
+    const firstPage = await request(app.getHttpServer())
+      .get('/me/saved-news?page=1&size=1')
+      .set('Authorization', token)
+      .expect(200);
+    const firstPageBody = firstPage.body as SavedNewsListResponse;
+    expect(firstPageBody).toMatchObject({ page: 1, size: 1, total: 2 });
+    expect(firstPageBody.items).toHaveLength(1);
+
+    const secondPage = await request(app.getHttpServer())
+      .get('/me/saved-news?page=2&size=1')
+      .set('Authorization', token)
+      .expect(200);
+    expect((secondPage.body as SavedNewsListResponse).items).toHaveLength(1);
+
+    await request(app.getHttpServer())
+      .delete(`/news/${publishedNewsId}/save`)
+      .set('Authorization', token)
+      .expect(204);
+    await request(app.getHttpServer())
+      .delete(`/news/${secondPublishedNewsId}/save`)
+      .set('Authorization', token)
+      .expect(204);
   });
 
   it('rejects missing and unpublished news', async () => {
@@ -304,5 +363,44 @@ describe('Saved news engagement (e2e)', () => {
       .post('/news/00000000-0000-0000-0000-000000000001/read')
       .set('Authorization', token)
       .expect(404);
+  });
+
+  it('cascades saved news and reading history when users or news are deleted', async () => {
+    const secondToken = tokenFor(
+      secondUserId,
+      `engagement-second-${stamp}@test.dev`,
+    );
+    await request(app.getHttpServer())
+      .put(`/news/${secondPublishedNewsId}/save`)
+      .set('Authorization', secondToken)
+      .expect(200);
+    await request(app.getHttpServer())
+      .post(`/news/${secondPublishedNewsId}/read`)
+      .set('Authorization', secondToken)
+      .expect(201);
+
+    await db.delete(news).where(eq(news.id, secondPublishedNewsId));
+    const savedForDeletedNews = await db
+      .select()
+      .from(savedNews)
+      .where(eq(savedNews.newsId, secondPublishedNewsId));
+    const historyForDeletedNews = await db
+      .select()
+      .from(readingHistory)
+      .where(eq(readingHistory.newsId, secondPublishedNewsId));
+    expect(savedForDeletedNews).toHaveLength(0);
+    expect(historyForDeletedNews).toHaveLength(0);
+
+    await db.delete(users).where(eq(users.id, secondUserId));
+    const savedForDeletedUser = await db
+      .select()
+      .from(savedNews)
+      .where(eq(savedNews.userId, secondUserId));
+    const historyForDeletedUser = await db
+      .select()
+      .from(readingHistory)
+      .where(eq(readingHistory.userId, secondUserId));
+    expect(savedForDeletedUser).toHaveLength(0);
+    expect(historyForDeletedUser).toHaveLength(0);
   });
 });
