@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { validate } from 'class-validator';
 import {
   EngagementPaginationQueryDto,
@@ -12,7 +13,7 @@ describe('Engagement DTOs', () => {
     pagination.page = 2;
     pagination.size = 50;
     const newsDto = new NewsEngagementDto();
-    newsDto.newsId = '00000000-0000-0000-0000-000000000001';
+    newsDto.newsId = '11111111-1111-4111-8111-111111111111';
     const savedNewsQuery = new SavedNewsQueryDto();
     const readingHistoryQuery = new ReadingHistoryQueryDto();
 

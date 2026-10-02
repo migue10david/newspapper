@@ -11,6 +11,7 @@ import { SettingsModule } from './settings/settings.module';
 import { TagsModule } from './tags/tags.module';
 import { UsersModule } from './users/users.module';
 import { InteractionsModule } from './interactions/interactions.module';
+import { EngagementModule } from './engagement/engagement.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { InteractionsModule } from './interactions/interactions.module';
     SchedulingModule,
     SettingsModule,
     InteractionsModule,
+    EngagementModule,
   ],
   controllers: [AppController],
   providers: [AppService],
