@@ -10,6 +10,7 @@ import {
   authors,
   categories,
   news,
+  readingHistory,
   savedNews,
   users,
 } from '../database/schema';
@@ -113,6 +114,9 @@ describe('Saved news engagement (e2e)', () => {
 
   afterAll(async () => {
     await db.delete(savedNews).where(eq(savedNews.newsId, publishedNewsId));
+    await db
+      .delete(readingHistory)
+      .where(eq(readingHistory.newsId, publishedNewsId));
     await db.delete(news).where(eq(news.id, publishedNewsId));
     await db.delete(news).where(eq(news.id, draftNewsId));
     await db.delete(users).where(eq(users.id, userId));
@@ -124,9 +128,7 @@ describe('Saved news engagement (e2e)', () => {
   });
 
   it('requires authentication and validates pagination', async () => {
-    await request(app.getHttpServer())
-      .get('/me/saved-news')
-      .expect(401);
+    await request(app.getHttpServer()).get('/me/saved-news').expect(401);
     await request(app.getHttpServer())
       .get('/me/saved-news?size=51')
       .set('Authorization', tokenFor(userId, `engagement-${stamp}@test.dev`))
@@ -198,6 +200,108 @@ describe('Saved news engagement (e2e)', () => {
       .expect(404);
     await request(app.getHttpServer())
       .delete(`/news/${draftNewsId}/save`)
+      .set('Authorization', token)
+      .expect(404);
+  });
+
+  it('records reading idempotently and updates lastReadAt', async () => {
+    const token = tokenFor(userId, `engagement-${stamp}@test.dev`);
+    const first = await request(app.getHttpServer())
+      .post(`/news/${publishedNewsId}/read`)
+      .set('Authorization', token)
+      .expect(201);
+    const firstReadAt = new Date(
+      (first.body as { lastReadAt: string }).lastReadAt,
+    );
+
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const second = await request(app.getHttpServer())
+      .post(`/news/${publishedNewsId}/read`)
+      .set('Authorization', token)
+      .expect(201);
+    const secondReadAt = new Date(
+      (second.body as { lastReadAt: string }).lastReadAt,
+    );
+    expect(secondReadAt.getTime()).toBeGreaterThanOrEqual(
+      firstReadAt.getTime(),
+    );
+
+    const list = await request(app.getHttpServer())
+      .get('/me/reading-history')
+      .set('Authorization', token)
+      .expect(200);
+    const body = list.body as SavedNewsListResponse;
+    expect(body.total).toBe(1);
+    expect(body.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: publishedNewsId }),
+      ]),
+    );
+  });
+
+  it('isolates, removes and clears reading history', async () => {
+    const firstToken = tokenFor(userId, `engagement-${stamp}@test.dev`);
+    const secondToken = tokenFor(
+      secondUserId,
+      `engagement-second-${stamp}@test.dev`,
+    );
+    await request(app.getHttpServer())
+      .post(`/news/${publishedNewsId}/read`)
+      .set('Authorization', secondToken)
+      .expect(201);
+
+    const firstList = await request(app.getHttpServer())
+      .get('/me/reading-history')
+      .set('Authorization', firstToken)
+      .expect(200);
+    expect((firstList.body as SavedNewsListResponse).total).toBe(1);
+
+    await request(app.getHttpServer())
+      .delete(`/me/reading-history/${publishedNewsId}`)
+      .set('Authorization', firstToken)
+      .expect(204);
+    const afterEntryRemoval = await request(app.getHttpServer())
+      .get('/me/reading-history')
+      .set('Authorization', firstToken)
+      .expect(200);
+    expect((afterEntryRemoval.body as SavedNewsListResponse).total).toBe(0);
+
+    await request(app.getHttpServer())
+      .post(`/news/${publishedNewsId}/read`)
+      .set('Authorization', firstToken)
+      .expect(201);
+    await request(app.getHttpServer())
+      .delete('/me/reading-history')
+      .set('Authorization', firstToken)
+      .expect(204);
+    const afterClear = await request(app.getHttpServer())
+      .get('/me/reading-history')
+      .set('Authorization', firstToken)
+      .expect(200);
+    expect((afterClear.body as SavedNewsListResponse).total).toBe(0);
+
+    const secondList = await request(app.getHttpServer())
+      .get('/me/reading-history')
+      .set('Authorization', secondToken)
+      .expect(200);
+    expect((secondList.body as SavedNewsListResponse).total).toBe(1);
+  });
+
+  it('requires authentication and rejects invalid or unpublished reads', async () => {
+    await request(app.getHttpServer())
+      .post(`/news/${publishedNewsId}/read`)
+      .expect(401);
+    const token = tokenFor(userId, `engagement-${stamp}@test.dev`);
+    await request(app.getHttpServer())
+      .get('/me/reading-history?size=51')
+      .set('Authorization', token)
+      .expect(400);
+    await request(app.getHttpServer())
+      .post(`/news/${draftNewsId}/read`)
+      .set('Authorization', token)
+      .expect(404);
+    await request(app.getHttpServer())
+      .post('/news/00000000-0000-0000-0000-000000000001/read')
       .set('Authorization', token)
       .expect(404);
   });
