@@ -68,6 +68,12 @@ export function AuthNavbar() {
         <Link className="inline-flex min-h-11 items-center rounded-md border border-border px-3 py-2 font-semibold hover:border-brand hover:text-brand" href="/admin/news">
           Noticias
         </Link>
+        <Link className="hidden min-h-11 items-center rounded-md border border-border px-3 py-2 font-semibold hover:border-brand hover:text-brand lg:inline-flex" href="/mis-noticias-guardadas">
+          Guardadas
+        </Link>
+        <Link className="hidden min-h-11 items-center rounded-md border border-border px-3 py-2 font-semibold hover:border-brand hover:text-brand xl:inline-flex" href="/mi-historial">
+          Historial
+        </Link>
         {role === 'editor' || role === 'admin' ? (
           <Link className="hidden min-h-11 items-center rounded-md border border-border px-3 py-2 font-semibold hover:border-brand hover:text-brand lg:inline-flex" href="/admin/catalog">
             Catálogo
