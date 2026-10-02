@@ -23,6 +23,8 @@ describe('Database schema', () => {
       'news_tags',
       'comments',
       'news_reactions',
+      'saved_news',
+      'reading_history',
       'site_settings',
     ];
     for (const table of expected) {
@@ -87,5 +89,28 @@ describe('Database schema', () => {
       { typeName: 'reaction_type', value: 'like' },
       { typeName: 'reaction_type', value: 'useful' },
     ]);
+  });
+
+  it('has engagement indexes and unique user-news keys', async () => {
+    const indexes = await db.execute<{ indexName: string }>(sql`
+      SELECT indexname AS "indexName"
+      FROM pg_indexes
+      WHERE schemaname = 'public'
+        AND indexname IN (
+          'saved_news_user_created_at_idx',
+          'saved_news_news_id_idx',
+          'reading_history_user_last_read_at_idx',
+          'reading_history_news_id_idx'
+        )
+    `);
+    expect(indexes.rows).toHaveLength(4);
+
+    const constraints = await db.execute<{ constraintName: string }>(sql`
+      SELECT conname AS "constraintName"
+      FROM pg_constraint
+      WHERE conrelid IN ('saved_news'::regclass, 'reading_history'::regclass)
+        AND contype = 'p'
+    `);
+    expect(constraints.rows).toHaveLength(2);
   });
 });
