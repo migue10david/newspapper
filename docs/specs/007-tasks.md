@@ -31,19 +31,19 @@ Las tareas backend se ejecutarán en `backend`; las frontend en `frontend`. La i
 
 ## Fase 5 — Cliente frontend
 
-- [ ] **T-154** Añadir tipos y cliente Axios de engagement.
-- [ ] **T-155** Crear queries y mutations TanStack Query con invalidación.
-- [ ] **T-156** Añadir acción de guardado al detalle público.
-- [ ] **T-157** Crear `/mis-noticias-guardadas`.
-- [ ] **T-158** Crear `/mi-historial`.
-- [ ] **T-159** Añadir estados de carga, vacío, error, sesión requerida y refresh.
+- [x] **T-154** Añadir tipos y cliente Axios de engagement.
+- [x] **T-155** Crear queries y mutations TanStack Query con invalidación.
+- [x] **T-156** Añadir acción de guardado al detalle público.
+- [x] **T-157** Crear `/mis-noticias-guardadas`.
+- [x] **T-158** Crear `/mi-historial`.
+- [x] **T-159** Añadir estados de carga, vacío, error, sesión requerida y refresh.
 
 ## Fase 6 — Compartir y accesibilidad
 
-- [ ] **T-160** Añadir copiar enlace y enlaces de compartir con URL canónica.
-- [ ] **T-161** Implementar fallback cuando `navigator.share` no esté disponible.
-- [ ] **T-162** Revisar labels, foco, `aria-pressed`, anuncios y teclado.
-- [ ] **T-163** Revisar objetivos táctiles, responsive y `prefers-reduced-motion`.
+- [x] **T-160** Añadir copiar enlace y enlaces de compartir con URL canónica.
+- [x] **T-161** Implementar fallback cuando `navigator.share` no esté disponible.
+- [x] **T-162** Revisar labels, foco, `aria-pressed`, anuncios y teclado.
+- [x] **T-163** Revisar objetivos táctiles, responsive y `prefers-reduced-motion`.
 
 ## Fase 7 — Integración por ramas
 
