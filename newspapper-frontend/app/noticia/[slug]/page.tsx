@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PublicInteractions } from "@/components/news/public-interactions";
+import { ReaderEngagementActions } from "@/components/news/reader-engagement-actions";
+import { ShareActions } from "@/components/news/share-actions";
 import { api, type RichTextBlock } from "@/lib/api";
 import { resolveMediaUrl } from "@/lib/media-api";
 
@@ -56,6 +58,8 @@ export default async function NewsPage({ params }: NewsPageProps) {
           </Card>
         </aside>
       </div>
+      <ReaderEngagementActions newsId={news.id} />
+      <ShareActions slug={news.slug} title={news.title} />
       <PublicInteractions newsId={news.id} slug={news.slug} />
     </article>
   );
