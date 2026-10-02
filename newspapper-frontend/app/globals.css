@@ -148,6 +148,22 @@ body {
   animation: ui-loading-shimmer 1.4s ease-in-out infinite;
 }
 
+.nav-menu-enter {
+  animation: nav-menu-enter var(--motion-duration) ease-out both;
+}
+
+@keyframes nav-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes ui-loading-shimmer {
   from {
     background-position: 200% 0;
@@ -166,6 +182,10 @@ body {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .nav-menu-enter {
+    animation: none;
   }
 }
 
