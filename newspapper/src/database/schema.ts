@@ -202,3 +202,49 @@ export const newsReactions = pgTable(
     index('news_reactions_user_id_idx').on(t.userId),
   ],
 );
+
+export const savedNews = pgTable(
+  'saved_news',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    newsId: uuid('news_id')
+      .notNull()
+      .references(() => news.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.newsId] }),
+    index('saved_news_user_created_at_idx').on(t.userId, t.createdAt),
+    index('saved_news_news_id_idx').on(t.newsId),
+  ],
+);
+
+export const readingHistory = pgTable(
+  'reading_history',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    newsId: uuid('news_id')
+      .notNull()
+      .references(() => news.id, { onDelete: 'cascade' }),
+    lastReadAt: timestamp('last_read_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.newsId] }),
+    index('reading_history_user_last_read_at_idx').on(
+      t.userId,
+      t.lastReadAt,
+    ),
+    index('reading_history_news_id_idx').on(t.newsId),
+  ],
+);
