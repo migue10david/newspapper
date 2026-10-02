@@ -42,7 +42,6 @@ services:
       corepack prepare pnpm@10.18.3 --activate &&
       pnpm install --frozen-lockfile &&
       pnpm --filter newspapper db:migrate &&
-      pnpm --filter newspapper db:seed &&
       pnpm --filter newspapper start:dev"
 
 volumes:
