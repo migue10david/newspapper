@@ -50,9 +50,9 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-background text-foreground">
-        <header className="border-b border-border bg-surface">
-          <nav className="mx-auto flex min-h-16 w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
-            <Link href="/" className="group flex items-center gap-3 text-lg font-bold tracking-tight">
+        <header className="sticky top-0 z-40 border-b-2 border-foreground/10 bg-surface/95 backdrop-blur-md">
+          <nav aria-label="Navegación principal" className="mx-auto flex min-h-16 w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6 lg:px-8">
+            <Link href="/" className="group flex min-w-0 items-center gap-3 text-lg font-bold tracking-tight">
               {settings.logoUrl ? (
                 <span
                   aria-label={`${settings.siteName} logo`}
@@ -61,13 +61,13 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
                   style={{ backgroundImage: `url(${settings.logoUrl})` }}
                 />
               ) : null}
-              <span className="font-display-editorial text-xl group-hover:text-brand">{settings.siteName}</span>
+              <span className="truncate font-display-editorial text-xl group-hover:text-brand sm:text-2xl">{settings.siteName}</span>
             </Link>
-            <div className="flex items-center gap-2 text-sm sm:gap-4">
-              <Link href="/" className="inline-flex min-h-11 items-center px-2 font-semibold hover:text-brand">
+            <div className="flex shrink-0 items-center gap-1 text-sm sm:gap-2">
+              <Link href="/" className="inline-flex min-h-11 items-center rounded-md px-3 py-2 font-semibold transition-colors hover:bg-surface-muted hover:text-brand">
                 Portada
               </Link>
-              <Link href="/buscar" className="inline-flex min-h-11 items-center px-2 font-semibold hover:text-brand">
+              <Link href="/buscar" className="inline-flex min-h-11 items-center rounded-md px-3 py-2 font-semibold transition-colors hover:bg-surface-muted hover:text-brand">
                 Buscar
               </Link>
               <AuthNavbar />

@@ -121,6 +121,28 @@ body {
   font-family: var(--font-body);
 }
 
+.homepage-masthead {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(100% - 1px),
+    rgb(228 228 231 / 0.35) calc(100% - 1px)
+  );
+  background-size: 25% 100%;
+}
+
+.homepage-masthead::after {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-top: 1px solid var(--brand);
+  border-right: 1px solid var(--brand);
+  content: "";
+  opacity: 0.7;
+}
+
 :where(button, input, select, textarea) {
   min-height: var(--touch-target);
 }
@@ -148,6 +170,22 @@ body {
   animation: ui-loading-shimmer 1.4s ease-in-out infinite;
 }
 
+.nav-menu-enter {
+  animation: nav-menu-enter var(--motion-duration) ease-out both;
+}
+
+@keyframes nav-menu-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes ui-loading-shimmer {
   from {
     background-position: 200% 0;
@@ -166,6 +204,10 @@ body {
     animation-iteration-count: 1 !important;
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .nav-menu-enter {
+    animation: none;
   }
 }
 
