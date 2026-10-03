@@ -2,10 +2,27 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useId, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import { BarChart3, BookOpen, Bookmark, Grid2X2, History, MessageCircle, Settings, Users, type LucideIcon } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { NavIcon } from '@/components/navigation/nav-icon';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarRail,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar';
 import { useAuthStore } from '@/lib/auth-store';
 import { getAdminNavigationGroups, type AdminNavigationItem } from '@/lib/navigation-config';
 
@@ -14,73 +31,94 @@ type UserRole = keyof typeof roleLabels;
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const menuId = useId();
-  const role = useAuthStore((state) => state.role);
-  const email = useAuthStore((state) => state.email);
-  const logout = useAuthStore((state) => state.logout);
-  const [isOpen, setIsOpen] = useState(false);
-
-  useEffect(() => setIsOpen(false), [pathname]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') setIsOpen(false);
-    }
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
 
   if (pathname === '/admin/login') return children;
 
+  return <SidebarProvider><AdminShellContent>{children}</AdminShellContent></SidebarProvider>;
+}
+
+function AdminShellContent({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const role = useAuthStore((state) => state.role);
+  const email = useAuthStore((state) => state.email);
+  const logout = useAuthStore((state) => state.logout);
+  const { setOpenMobile } = useSidebar();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const groups = getAdminNavigationGroups(role);
 
   async function handleLogout() {
+    setIsLoggingOut(true);
     try {
       await logout();
     } finally {
-      setIsOpen(false);
+      setOpenMobile(false);
       router.replace('/admin/login');
     }
   }
 
   return (
     <div className="min-h-screen bg-surface-muted">
-      <header className="sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur-md lg:hidden">
-        <div className="flex min-h-16 items-center justify-between gap-3 px-4 sm:px-6">
+      <Sidebar collapsible="icon" variant="sidebar">
+        <SidebarHeader>
+          <Link className="block truncate px-2 py-2 font-display-editorial text-2xl font-bold tracking-tight hover:text-brand group-data-[collapsible=icon]:text-center group-data-[collapsible=icon]:text-xl" href="/admin">Periódico <span className="group-data-[collapsible=icon]:hidden"><span className="text-brand">/</span> Panel</span></Link>
+          <p className="px-2 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-muted group-data-[collapsible=icon]:hidden">Redacción digital</p>
+          <div className="mt-3 flex items-center gap-3 rounded-md border border-border bg-surface-subtle p-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent">
+            <span aria-hidden="true" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">{getInitials(email ?? 'Usuario')}</span>
+            <div className="min-w-0 group-data-[collapsible=icon]:hidden"><p className="truncate text-sm font-semibold">{email ?? 'Usuario autenticado'}</p>{role ? <Badge className="mt-1" variant="secondary">{roleLabels[role as UserRole]}</Badge> : null}</div>
+          </div>
+        </SidebarHeader>
+        <SidebarContent>
+          {groups.map((group) => <SidebarGroup key={group.label}><SidebarGroupLabel>{group.label}</SidebarGroupLabel><SidebarGroupContent><SidebarMenu>{group.items.filter((item) => item.visible).map((item) => <AdminNavLink item={item} isActive={isActive(pathname, item.href)} key={item.href} />)}</SidebarMenu></SidebarGroupContent></SidebarGroup>)}
+        </SidebarContent>
+        <SidebarFooter>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Cerrar sesión" className="text-danger hover:bg-danger-soft hover:text-danger">
+                <button aria-label="Cerrar sesión" disabled={isLoggingOut} onClick={() => void handleLogout()} type="button"><span aria-hidden="true">↪</span><span>{isLoggingOut ? 'Cerrando sesión…' : 'Cerrar sesión'}</span></button>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+        <SidebarRail />
+      </Sidebar>
+      <SidebarInset>
+        <header className="sticky top-0 z-30 flex min-h-16 items-center gap-3 border-b border-border bg-surface/95 px-4 backdrop-blur-md md:hidden">
+          <SidebarTrigger />
           <Link className="font-display-editorial text-xl font-bold tracking-tight hover:text-brand" href="/admin">Periódico <span className="text-brand">/</span> Panel</Link>
-          <button aria-controls={menuId} aria-expanded={isOpen} aria-label={isOpen ? 'Cerrar navegación del panel' : 'Abrir navegación del panel'} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-border text-lg font-bold hover:border-brand hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" onClick={() => setIsOpen((open) => !open)} type="button"><span aria-hidden="true">{isOpen ? '×' : '☰'}</span></button>
+        </header>
+        <div className="w-full min-w-0 flex-1 px-4 py-8 sm:px-6 lg:px-8 lg:py-8 2xl:px-10">
+          <div className="mb-8 hidden items-center justify-between border-b border-border pb-4 md:flex">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-muted">Workspace editorial</p>
+            <SidebarTrigger />
+          </div>
+          {children}
         </div>
-      </header>
-
-      {isOpen ? <button aria-label="Cerrar navegación" className="fixed inset-0 z-40 bg-black/20 lg:hidden" onClick={() => setIsOpen(false)} type="button" /> : null}
-      <div className="mx-auto flex w-full max-w-[92rem]">
-        <aside aria-label="Navegación del panel" className={`fixed inset-y-0 left-0 z-50 flex w-[min(20rem,88vw)] flex-col border-r border-border bg-surface px-4 py-5 shadow-elevated transition-transform motion-reduce:transition-none lg:sticky lg:top-0 lg:z-30 lg:h-screen lg:w-72 lg:translate-x-0 lg:shadow-none ${isOpen ? 'translate-x-0' : '-translate-x-full'}`} id={menuId}>
-          <div className="flex items-start justify-between gap-3 border-b border-border px-2 pb-5">
-            <div>
-              <Link className="font-display-editorial text-2xl font-bold tracking-tight hover:text-brand" href="/admin">Periódico <span className="text-brand">/</span> Panel</Link>
-              <p className="mt-1 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-muted">Redacción digital</p>
-            </div>
-            <button aria-label="Cerrar navegación" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-xl text-muted hover:bg-surface-muted hover:text-foreground lg:hidden" onClick={() => setIsOpen(false)} type="button">×</button>
-          </div>
-          <div className="flex items-center gap-3 border-b border-border px-2 py-4">
-            <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">{getInitials(email ?? 'Usuario')}</span>
-            <div className="min-w-0"><p className="truncate text-sm font-semibold">{email ?? 'Usuario autenticado'}</p>{role ? <Badge className="mt-1" variant="secondary">{roleLabels[role as UserRole]}</Badge> : null}</div>
-          </div>
-          <nav className="flex-1 overflow-y-auto py-5" aria-label="Secciones del panel">
-            {groups.map((group) => <div className="mb-6 last:mb-0" key={group.label}><p className="px-3 pb-2 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-muted">{group.label}</p><div className="space-y-1">{group.items.filter((item) => item.visible).map((item) => <AdminNavLink item={item} isActive={isActive(pathname, item.href)} key={item.href} onSelect={() => setIsOpen(false)} />)}</div></div>)}
-          </nav>
-          <button className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-semibold text-danger transition-colors hover:bg-danger-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand" onClick={() => void handleLogout()} type="button"><span aria-hidden="true">↪</span>Cerrar sesión</button>
-        </aside>
-        <main className="min-w-0 flex-1 px-4 py-8 sm:px-6 lg:px-10 lg:py-10">{children}</main>
-      </div>
+      </SidebarInset>
     </div>
   );
 }
 
-function AdminNavLink({ item, isActive, onSelect }: { item: AdminNavigationItem; isActive: boolean; onSelect: () => void }) {
-  return <Link aria-current={isActive ? 'page' : undefined} className={`group flex min-h-11 items-center gap-3 rounded-lg border-l-2 px-3 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand ${isActive ? 'border-brand bg-brand-soft text-brand-strong' : 'border-transparent text-muted hover:border-border-strong hover:bg-surface-muted hover:text-foreground'}`} href={item.href} onClick={onSelect}><NavIcon name={item.icon} /><span>{item.label}</span>{isActive ? <span aria-hidden="true" className="ml-auto h-1.5 w-1.5 rounded-full bg-brand" /> : null}</Link>;
+function AdminNavLink({ item, isActive }: { item: AdminNavigationItem; isActive: boolean }) {
+  const { setOpenMobile } = useSidebar();
+
+  return <SidebarMenuItem><SidebarMenuButton asChild isActive={isActive} tooltip={item.label}><Link aria-current={isActive ? 'page' : undefined} href={item.href} onClick={() => setOpenMobile(false)}><AdminNavIcon name={item.icon} /><span>{item.label}</span></Link></SidebarMenuButton></SidebarMenuItem>;
+}
+
+const adminIcons: Record<AdminNavigationItem['icon'], LucideIcon> = {
+  book: BookOpen,
+  chart: BarChart3,
+  comment: MessageCircle,
+  grid: Grid2X2,
+  history: History,
+  settings: Settings,
+  users: Users,
+  bookmark: Bookmark,
+};
+
+function AdminNavIcon({ name }: { name: AdminNavigationItem['icon'] }) {
+  const Icon = adminIcons[name];
+  return <Icon aria-hidden="true" size={18} strokeWidth={1.8} />;
 }
 
 function isActive(pathname: string, href: string): boolean {

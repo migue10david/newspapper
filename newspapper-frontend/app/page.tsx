@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
-import { api, type NewsListItem } from "@/lib/api";
+import { api, type NewsListItem, type PublicTaxonomyItem } from "@/lib/api";
 import { resolveMediaUrl } from "@/lib/media-api";
 
 const PAGE_SIZE = 10;
@@ -35,37 +35,40 @@ export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
   const currentPage = normalizePage(params?.page);
   const news = await api.listNews({ page: currentPage, size: PAGE_SIZE });
+  const categories = await getCategories();
   const totalPages = Math.max(1, Math.ceil(news.total / news.size));
   const lead = news.items[0];
   const secondaryItems = news.items.slice(1);
 
   return (
-    <div className="space-y-14 pb-4 sm:space-y-16">
-      <header className="relative overflow-hidden border-y-2 border-foreground py-7 sm:py-9">
+    <div className="space-y-12 pb-4 sm:space-y-16">
+      <header className="homepage-masthead relative overflow-hidden border-y-2 border-foreground py-6 sm:py-8">
         <div className="absolute inset-y-0 left-0 w-1 bg-brand" aria-hidden="true" />
-        <div className="grid gap-8 pl-4 sm:pl-6 lg:grid-cols-[minmax(0,1fr)_15rem] lg:items-end lg:gap-12">
-          <div>
-            <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-bold uppercase tracking-[0.2em] text-brand">
+        <div className="flex flex-col gap-6 pl-4 sm:pl-6 lg:flex-row lg:items-end lg:justify-between lg:gap-10">
+          <div className="max-w-4xl">
+            <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-[0.68rem] font-bold uppercase tracking-[0.22em] text-brand">
               <span>Portada</span>
-              <span className="h-px w-8 bg-brand" aria-hidden="true" />
+              <span className="h-px w-10 bg-brand" aria-hidden="true" />
               <span className="text-muted">Edición del día</span>
             </div>
-            <h1 className="max-w-5xl font-display-editorial text-[clamp(3rem,8vw,6.75rem)] font-bold leading-[0.88] tracking-[-0.045em]">
-              Las noticias, reunidas para leer sin ruido.
+            <h1 className="max-w-4xl font-display-editorial text-[clamp(3rem,8vw,6.75rem)] font-bold leading-[0.86] tracking-[-0.05em]">
+              La actualidad, en primera plana.
             </h1>
             <p className="mt-6 max-w-2xl text-base leading-7 text-muted sm:text-lg">
-              Actualidad, contexto y criterio editorial en una portada pensada para descubrir lo importante.
+              Noticias, contexto y criterio editorial para empezar el día bien informado.
             </p>
           </div>
-          <div className="flex items-end justify-between gap-5 border-t border-border pt-4 text-sm text-muted lg:block lg:border-l lg:border-t-0 lg:pb-1 lg:pl-5 lg:pt-0">
+          <div className="flex shrink-0 items-end justify-between gap-8 border-t border-border pt-4 text-xs font-bold uppercase tracking-[0.14em] text-muted lg:block lg:border-l lg:border-t-0 lg:pb-1 lg:pl-6 lg:pt-0">
             <div>
-              <p className="font-display-editorial text-4xl font-bold leading-none text-foreground">{news.total}</p>
-              <p className="mt-2 font-medium uppercase tracking-[0.12em]">Noticias publicadas</p>
+              <p className="font-display-editorial text-3xl normal-case leading-none text-foreground sm:text-4xl">{formatEditionDate()}</p>
+              <p className="mt-2">Edición impresa digital</p>
             </div>
-            <p className="text-right lg:mt-8 lg:text-left">Página {news.page} de {totalPages}</p>
+            <p className="mt-4 text-right lg:text-left">Folio {String(news.page).padStart(2, "0")} · {totalPages} páginas</p>
           </div>
         </div>
       </header>
+
+      {categories.length > 0 ? <CategoryRail categories={categories} /> : null}
 
       {lead ? (
         <section aria-labelledby="featured-heading" className="grid gap-8 lg:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.7fr)]">
@@ -160,6 +163,31 @@ function LatestArticle({ item }: { item: NewsListItem }) {
   );
 }
 
+async function getCategories(): Promise<PublicTaxonomyItem[]> {
+  try {
+    return await api.listCategories();
+  } catch {
+    return [];
+  }
+}
+
+function CategoryRail({ categories }: { categories: PublicTaxonomyItem[] }) {
+  return (
+    <nav aria-label="Secciones editoriales" className="border-y border-border py-3">
+      <div className="flex items-center gap-4 overflow-x-auto pb-1 text-xs font-bold uppercase tracking-[0.14em] [scrollbar-width:none] sm:gap-6">
+        <Link className="inline-flex min-h-11 shrink-0 items-center border-b-2 border-brand text-brand" href="/">
+          Todas
+        </Link>
+        {categories.map((category) => (
+          <Link className="inline-flex min-h-11 shrink-0 items-center border-b-2 border-transparent text-muted transition-colors hover:border-brand hover:text-brand" href={`/categoria/${category.slug}`} key={category.id}>
+            {category.name}
+          </Link>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
 function normalizePage(page: string | string[] | undefined): number {
   const value = Array.isArray(page) ? page[0] : page;
   const parsed = Number(value);
@@ -173,6 +201,10 @@ function createPageHref(page: number): string {
 function formatDate(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "Fecha no disponible" : new Intl.DateTimeFormat("es", { day: "2-digit", month: "long", year: "numeric" }).format(date);
+}
+
+function formatEditionDate(): string {
+  return new Intl.DateTimeFormat("es", { day: "2-digit", month: "short", year: "numeric" }).format(new Date());
 }
 
 function getSiteUrl(path: string): string {

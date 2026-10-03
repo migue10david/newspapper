@@ -124,11 +124,13 @@ export function useAdminSettings() {
   });
 }
 
-export function useAdminComments(params: ManageCommentsParams) {
+export function useAdminComments(params: ManageCommentsParams, canModerate = true) {
+  const authOptions = useAuthenticatedQueryOptions();
   return useQuery({
     queryKey: adminQueryKeys.comments(params),
     queryFn: () => interactionsApi.listManageComments(params),
-    ...useAuthenticatedQueryOptions(),
+    ...authOptions,
+    enabled: canModerate && authOptions.enabled,
   });
 }
 
